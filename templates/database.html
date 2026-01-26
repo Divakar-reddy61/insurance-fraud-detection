@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Database Records</title>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            background: #24364d;
+        }
+
+        /* -------- NAVBAR -------- */
+        .nav {
+            background: #203a43;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .nav a {
+            color: white;
+            text-decoration: none;
+            margin: 15px;
+            font-weight: bold;
+        }
+
+        .nav a:hover {
+            text-decoration: underline;
+        }
+
+        /* -------- HEADER -------- */
+        .header {
+            padding: 20px;
+            text-align: center;
+        }
+
+        /* -------- CONTAINER -------- */
+        .container {
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        /* -------- SEARCH -------- */
+        input[type="text"] {
+            padding: 8px;
+            width: 40%;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            margin-bottom: 15px;
+        }
+
+        /* -------- TABLE -------- */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background: #203a43;
+            color: white;
+        }
+
+        tr:hover {
+            background: #f1f8ff;
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- NAVIGATION -->
+<div class="nav">
+    <a href="/">Home</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/database">Database</a>
+</div>
+
+<div class="header">
+    <h2>Stored Prediction Records</h2>
+    <p>Database View (Read Only)</p>
+</div>
+
+<div class="container">
+
+    </div>
+    <div class="card">
+
+        <!-- SEARCH -->
+        <input type="text" id="searchInput" placeholder="Search by image name or prediction..."
+               onkeyup="searchTable()">
+
+        <!-- TABLE -->
+        <table id="recordTable">
+            <tr>
+                <th>Image Name</th>
+                <th>Prediction</th>
+                <th>Confidence (%)</th>
+                <th>Timestamp</th>
+            </tr>
+
+            {% for row in history %}
+            <tr>
+                <td>{{ row[1] }}</td>
+                <td>{{ row[2] }}</td>
+                <td>{{ "%.2f"|format(row[3]) }}%</td>
+                <td>{{ row[4] }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+
+    </div>
+</div>
+
+<!-- ================= JAVASCRIPT ================= -->
+<script>
+    function searchTable() {
+        const input = document.getElementById("searchInput").value.toLowerCase();
+        const rows = document.querySelectorAll("#recordTable tr");
+
+        for (let i = 1; i < rows.length; i++) {
+            const img = rows[i].cells[0].innerText.toLowerCase();
+            const pred = rows[i].cells[1].innerText.toLowerCase();
+
+            rows[i].style.display =
+                (img.includes(input) || pred.includes(input)) ? "" : "none";
+        }
+    }
+
+
+</script>
+
+</body>
+</html>

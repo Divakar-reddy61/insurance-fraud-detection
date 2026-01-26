@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Analytics Dashboard</title>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- html2pdf -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            background:whitesmoke;
+        }
+
+        .nav {
+            background: #203a43;
+            padding: 12px;
+            text-align: center;
+        }
+
+        .nav a {
+            color: white;
+            text-decoration: none;
+            margin: 15px;
+            font-weight: bold;
+            text-align:right;
+        }
+
+        .header {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        .card {
+            background:white ;
+            padding: 20px;
+            border-radius: 14px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+        }
+
+        canvas {
+            width: 40% !important;
+            height: 300px !important;
+        }
+
+        select {
+            padding: 8px;
+            border-radius: 6px;
+        }
+
+        button {
+            padding: 10px 20px;
+            border-radius: 20px;
+            background: linear-gradient(45deg, #00c6ff, #0072ff);
+            color: white;
+            border: none;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 8px;
+        }
+
+        th, td {
+            padding: 6px;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+        }
+
+        th {
+            background: #203a43;
+            color: white;
+        }
+
+        /* ---------------- PDF ONLY STYLES ---------------- */
+        #pdfContent {
+            page-break-before: avoid !important;
+            page-break-after: avoid !important;
+            page-break-inside: avoid !important;
+        }
+
+        #pdfContent * {
+            page-break-inside: avoid !important;
+        }
+        #pdfContent h2 {
+            font-size: 18px;
+            margin-bottom: 6px;
+        }
+
+        #pdfContent p,
+        #pdfContent li {
+            font-size: 11px;
+            margin: 3px 0;
+        }
+
+        .pdf-image {
+            max-width: 70px;
+            max-height: 70px;
+            margin: 2px;
+        }
+
+        .pdf-layer-container {
+            page-break-inside: avoid;
+        }
+
+        .pdf-table th,
+        .pdf-table td {
+            font-size: 9px;
+            padding: 3px;
+        }
+
+        @media print {
+            #pdfContent,
+            .pdf-layer-container,
+            table,
+            ul {
+                page-break-inside: avoid;
+                page-break-before: avoid;
+                page-break-after: avoid;
+            }
+        }
+
+        /* ---- CENTER ALIGN CHARTS ---- */
+        .card canvas {
+            display: block;
+            margin: 0 auto;
+        }
+
+    </style>
+</head>
+
+<body>
+
+<div class="nav">
+    <a href="/">Home</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/database">Database</a>
+</div>
+
+<div class="header">
+    <h2>Analytics Dashboard</h2>
+    <p>Visualization & Insights</p>
+</div>
+
+<class="container">
+
+          
+    <!-- CHARTS -->
+    <div class="card">
+        <h3>Prediction Distribution</h3>
+        <canvas id="pieChart"></canvas>
+    </div>
+
+    <div class="card">
+        <h3>Confidence Comparison</h3>
+        <canvas id="barChart"></canvas>
+    </div>
+
+    <div class="card">
+        <h3>Prediction Trend Over Time</h3>
+        <canvas id="lineChart"></canvas>
+    </div>
+
+
+    <!-- EXPORT -->
+    {% if uploaded_image_url %}
+    <div class="card">
+        <h3>Export Data</h3>
+        <button onclick="exportPDF()">Download PDF</button>
+    </div>
+
+    <!-- PDF CONTENT (ONLY THIS GOES INTO PDF) -->
+    <div id="pdfContent">
+        <h2>Prediction Details</h2>
+
+        <p><strong>Uploaded Image:</strong></p>
+        <img src="{{ uploaded_image_url }}" class="pdf-image">
+
+        <p><strong>Confidence Score:</strong> {{ confidence_score }}%</p>
+         <p>
+        <strong>Prediction Label:</strong>
+        {% if confidence_score >= 50 %}
+            REAL
+        {% else %}
+            FAKE
+        {% endif %}
+         </p>
+
+        <p><strong>Explanation:</strong></p>
+        <ul>
+            {% for line in explanation_text %}
+                <li>{{ line }}</li>
+            {% endfor %}
+        </ul>
+
+        <p><strong>Layer Outputs:</strong></p>
+        {% for layer, images in feature_images.items() %}
+            <p><strong>{{ layer }} - {{ layer_descriptions[layer] }}</strong></p>
+            <div class="pdf-layer-container">
+                {% for img in images %}
+                    <img src="{{ img }}" class="pdf-image">
+                {% endfor %}
+            </div>
+        {% endfor %}
+
+        <!-- <p><strong>Prediction Records:</strong></p>
+        <table class="pdf-table">
+            <tr>
+                <th>Image</th>
+                <th>Prediction</th>
+                <th>Confidence</th>
+                <th>Time</th>
+            </tr>
+            {% for row in history %}
+            <tr>
+                <td>{{ row[1] }}</td>
+                <td>{{ row[2] }}</td>
+                <td>{{ "%.2f"|format(row[3]) }}%</td>
+                <td>{{ row[4] }}</td>
+            </tr>
+            {% endfor %}
+        </table>
+    </div>
+    {% endif %} -->
+</div>
+
+
+<script>
+
+    
+function exportPDF() {
+    const element = document.getElementById("pdfContent");
+
+    element.style.display = "block";
+
+    // CRITICAL: shrink layout width so it fits vertically
+    element.style.width = "700px";
+    element.style.margin = "0 auto";
+
+    const opt = {
+        margin: [0.2, 0.2, 0.2, 0.2],
+        filename: "prediction_details.pdf",
+        image: { type: "jpeg", quality: 1 },
+        html2canvas: {
+            scale: 1.5,
+            useCORS: true,
+            scrollY: 0
+        },
+        jsPDF: {
+            unit: "mm",
+            format: "a4",   // 🔥 VERY IMPORTANT
+            orientation: "portrait"
+        },
+        pagebreak: { mode: ['avoid-all'] } // 🔥 FORCE FIRST PAGE
+    };
+
+    html2pdf().set(opt).from(element).save().then(() => {
+        element.style.display = "none";
+        element.style.width = "auto";
+    });
+}
+
+/* -------- CHARTS -------- */
+
+new Chart(document.getElementById("pieChart"), {
+    type: "pie",
+    data: {
+        labels: ["REAL", "FAKE"],
+        datasets: [{
+            data: [{{ real_count }}, {{ fake_count }}],
+            backgroundColor: ["#2ecc71", "#e74c3c"]
+        }]
+    }
+});
+
+new Chart(document.getElementById("barChart"), {
+    type: "bar",
+    data: {
+        labels: {{ confidences | tojson }},
+        datasets: [{
+            label: "Confidence %",
+            data: {{ confidences | tojson }},
+            backgroundColor: "#3498db"
+        }]
+    },
+    options: {
+        scales: { y: { beginAtZero: true, max: 100 } }
+    }
+});
+
+new Chart(document.getElementById("lineChart"), {
+    type: "line",
+    data: {
+        labels: {{ time_labels | tojson }},
+        datasets: [
+            {
+                label: "REAL",
+                data: {{ real_trend | tojson }},
+                borderColor: "#2ecc71",
+                fill: false
+            },
+            {
+                label: "FAKE",
+                data: {{ fake_trend | tojson }},
+                borderColor: "#e74c3c",
+                fill: false
+            }
+        ]
+    }
+});
+
+
+</script>
+
+</body>
+</html>
